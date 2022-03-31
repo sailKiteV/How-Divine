@@ -11,35 +11,56 @@ public class ProbabilityCalculator {
 
     public double rollAtLeast( int target, RollHandler rollHandler ) {
         double result = 0;
-        Map<Integer, Integer> ranges = new HashMap<>();
+        Map<Double, Integer> avgHitRanges = new HashMap<>();
+        Map<Double, Integer> fireRanges = new HashMap<>();
+        Map<Double, Integer> coldRanges = new HashMap<>();
+        Map<Double, Integer> lightRanges = new HashMap<>();
 
-        int fireMin = rollHandler.getModifier( "fire" ).getRange( "range" ).getMinimum();
-        int fireMax = rollHandler.getModifier( "fire" ).getRange( "range" ).getMaximum();
-        int coldMin = rollHandler.getModifier( "cold" ).getRange( "range" ).getMinimum();
-        int coldMax = rollHandler.getModifier( "cold" ).getRange( "range" ).getMaximum();
-        int lightMin = rollHandler.getModifier( "light" ).getRange( "range" ).getMinimum();
-        int lightMax = rollHandler.getModifier( "light" ).getRange( "range" ).getMaximum();
+        populateMap( fireRanges, rollHandler, "fire" );
+        populateMap( coldRanges, rollHandler, "cold" );
+        populateMap( lightRanges, rollHandler, "light" );
 
-        int temp = 0;
-        for ( int i = fireMin; i < fireMax + 1; i++ ) {
-            for ( int j = coldMin; j < coldMax + 1; j++ ) {
-                for ( int k = lightMin; k < lightMax + 1; k++ ) {
-                    temp = ranges.containsKey( i+j+k )
-                            ? ranges.get( i+j+k ) + 1
-                            : 1;
-                    ranges.put( i+j+k, temp );
+        double sum;
+        int tempInt = 0;
+        for( Double fireKey : fireRanges.keySet() ) {
+            for( Double coldKey : coldRanges.keySet() ){
+                for( Double lightKey: lightRanges.keySet() ) {
+                    sum = fireKey + coldKey + lightKey;
+                    tempInt = fireRanges.get( fireKey )
+                            * coldRanges.get( coldKey )
+                            * lightRanges.get( lightKey );
+                    avgHitRanges.put( sum, tempInt );
                 }
             }
         }
 
-        temp = 0;
-        for( Integer key : ranges.keySet() ) {
+        tempInt = 0;
+        for( Double key : avgHitRanges.keySet() ) {
             if( key < target ) {
-                result += ranges.get( key );
+                result += avgHitRanges.get( key );
             }
-            temp += ranges.get( key );
+            tempInt += avgHitRanges.get( key );
         }
 
-        return 1 - result / temp;
+        return 1 - result / tempInt;
+    }
+
+    private void populateMap( Map<Double, Integer> map, RollHandler handler, String modifier ) {
+        int min1 = handler.getModifier( modifier ).getRange( "lower" ).getMinimum();
+        int min2 = handler.getModifier( modifier ).getRange( "lower" ).getMaximum();
+        int max1 = handler.getModifier( modifier ).getRange( "upper" ).getMinimum();
+        int max2 = handler.getModifier( modifier ).getRange( "upper" ).getMaximum();
+
+        int tempInt = 0;
+        double tempDouble = 0;
+        for ( int a = max1; a < max2 + 1; a++ ) {
+            for ( int b = min1; b < min2 + 1; b++ ) {
+                tempDouble = (double)(a+b)/2;
+                tempInt = map.containsKey( tempDouble )
+                        ? map.get( tempDouble ) + 1
+                        : 1;
+                map.put( tempDouble, tempInt );
+            }
+        }
     }
 }
